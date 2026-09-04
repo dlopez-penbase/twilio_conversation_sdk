@@ -298,9 +298,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
             break
             
         case Methods.sendMessage:
-            self.conversationsHandler.sendMessage(conversationId: arguments?["conversationId"] as! String, messageText: arguments?["message"] as! String, attributes: arguments?["attribute"] as! [String : Any]) { tchResult, tchMessages in
+            self.conversationsHandler.sendMessage(conversationId: arguments?["conversationId"] as! String, messageText: arguments?["message"] as! String, attributes: arguments?["attribute"] as! [String : Any]) { tchResult, messageId in
                 if (tchResult.isSuccessful){
-                    result("send")
+                    result(messageId)
                 }else {
                     result(tchResult.resultText)
                 }

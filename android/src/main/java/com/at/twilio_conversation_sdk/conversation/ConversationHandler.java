@@ -225,9 +225,13 @@ public class ConversationHandler {
                 Attributes attributes = new Attributes(jsonObject);
                 conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener() {
                     @Override
-                    public void onSuccess(Object data) {
+                    public void onSuccess(Message message) {
                         System.out.println("messageMap- onSuccess");
-                        result.success("send");
+                        if (message != null) {
+                            result.success(message.getSid());
+                        } else {
+                            result.success(null);
+                        }
                     }
 
                     @Override
