@@ -175,7 +175,7 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     func sendMessage(conversationId: String,
                      messageText: String,
                      attributes: [String: Any],
-                     completion: @escaping (TCHResult, TCHMessage?) -> Void) {
+                     completion: @escaping (TCHResult, String?) -> Void) {
         // Fetch the conversation using the provided ID
         self.getConversationFromId(conversationId: conversationId) { conversation in
             //            if let error = error {
@@ -192,8 +192,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             // Prepare and send the message
             conversation?.prepareMessage()
                 .setAttributes(attributesObject, error: nil)
-                .setBody(messageText).buildAndSend(completion: { tchResult, tchMessages in
-                    completion(tchResult,tchMessages)
+                .setBody(messageText).buildAndSend(completion: { tchResult, tchMessage in
+                    let messageId = tchMessage?.sid 
+                    completion(tchResult, messageId)
                 })
             
             
