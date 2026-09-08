@@ -223,7 +223,7 @@ public class ConversationHandler {
                 jsonObject = new JSONObject(attribute);
 
                 Attributes attributes = new Attributes(jsonObject);
-                conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener() {
+                conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener<Message>() {
                     @Override
                     public void onSuccess(Message message) {
                         System.out.println("messageMap- onSuccess");
