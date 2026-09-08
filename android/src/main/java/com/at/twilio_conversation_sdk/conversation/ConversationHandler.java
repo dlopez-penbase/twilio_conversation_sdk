@@ -218,12 +218,10 @@ public class ConversationHandler {
         conversationClient.getConversation(conversationId, new CallbackListener<Conversation>() {
             @Override
             public void onSuccess(Conversation conversation) {
-                // Join the conversation with the given participant identity
-                JSONObject jsonObject;
-                jsonObject = new JSONObject(attribute);
+                JSONObject jsonObject = new JSONObject(attribute);
 
                 Attributes attributes = new Attributes(jsonObject);
-                conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener() {
+                conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener<Message>() {
                     @Override
                     public void onSuccess(Message message) {
                         System.out.println("messageMap- onSuccess");
