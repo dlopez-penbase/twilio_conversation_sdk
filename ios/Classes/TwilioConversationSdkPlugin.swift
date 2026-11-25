@@ -9,6 +9,8 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
     var localConversation: TCHConversation?
     var tokenEventSink: FlutterEventSink?
     private var conversationsHandlers: ConversationsHandler?
+
+    static var enableLogging: Bool = false
     
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         self.eventSink = events
@@ -53,8 +55,11 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let arguments = call.arguments as? [String:Any]
-        print("call->\(String(describing: call.method))")
-        print("arguments->\(String(describing: arguments))")
+
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("call->\(String(describing: call.method))")
+            print("arguments->\(String(describing: arguments))")
+        }
         
         switch call.method {
         case Methods.generateToken:
@@ -80,7 +85,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
             break
         case Methods.updateAccessToken:
             self.conversationsHandler.updateAccessToken(accessToken: arguments?["accessToken"] as! String) { tchResult in
-                print("Methods.updateAccessToken->\(String(describing: tchResult))")
+                if TwilioConversationSdkPlugin.enableLogging {
+                    print("Methods.updateAccessToken->\(String(describing: tchResult))")
+                }
                 var tokenStatus: [String: Any] = [:]
                 if let tokenUpdateResult = tchResult {
                     if (tokenUpdateResult.resultCode == 200){
@@ -95,6 +102,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
             }
             break
         case Methods.initializeConversationClient:
+            if let enableLog = arguments?["enableLogging"] as? Bool {
+                TwilioConversationSdkPlugin.enableLogging = enableLog
+            }
             self.conversationsHandler.clientDelegate = self
             self.conversationsHandler.loginWithAccessToken(arguments?["accessToken"] as! String) { loginResult in
                 guard let loginResultSuccessful: Bool = loginResult?.isSuccessful else {return}
@@ -139,7 +149,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
                     if (ConvertorUtility.isNilOrEmpty(dictionary["conversationName"]) == false && ConvertorUtility.isNilOrEmpty(dictionary["sid"]) == false){
                         listOfConversations.append(dictionary)
                     }
-                    print(dictionary)
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print(dictionary)
+                    }
                 }
                 result(listOfConversations)
             }
@@ -159,7 +171,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
                         do {
                             let jsonData = try JSONSerialization.data(withJSONObject: user.attributes()!.dictionary ?? Dictionary(), options: .prettyPrinted)
                             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                                print(jsonString)
+                                if TwilioConversationSdkPlugin.enableLogging {
+                                    print(jsonString)
+                                }
                                 participant["attributes"] = jsonString
                                 
                             }
@@ -198,7 +212,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
                         do {
                             let jsonData = try JSONSerialization.data(withJSONObject: user.attributes()?.dictionary ?? [:], options: .prettyPrinted)
                             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                                print(jsonString)
+                                if TwilioConversationSdkPlugin.enableLogging {
+                                    print(jsonString)
+                                }
                                 participant["attributes"] = jsonString
                             }
                         } catch {
@@ -309,7 +325,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
         case Methods.sendMessageWithMedia:
             self.conversationsHandler.sendMessageWithMedia(conversationId: arguments?["conversationId"] as! String, messageText: arguments?["message"] as! String, attributes: arguments?["attribute"] as! [String : Any], mediaFilePath: arguments?["mediaFilePath"] as! String, mimeType: arguments?["mimeType"] as! String, fileName: arguments?["fileName"] as! String ){ tchResult, tchMessages in
                 if (tchResult.isSuccessful){
-                    print("sendMessageWithMedia send success")
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print("sendMessageWithMedia send success")
+                    }
                     result("send")
                 }else {
                     result(tchResult.resultText)
@@ -335,7 +353,9 @@ public class TwilioConversationSdkPlugin: NSObject, FlutterPlugin,FlutterStreamH
                     
                     //MARK: setLastReadMessageIndex
                     conversation?.setLastReadMessageIndex(conversation?.lastMessageIndex ?? 0, completion: { result, index in
-                        print("setLastReadMessageIndex\(result.description)")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("setLastReadMessageIndex\(result.description)")
+                        }
                         self.conversationsHandler.lastReadIndex = nil
                     })
                 }
@@ -384,7 +404,9 @@ extension TwilioConversationSdkPlugin : MessageDelegate {
 
 extension TwilioConversationSdkPlugin : ClientDelegate {
     func onClientSynchronizationChanged(status: [String : Any]) {
-        print("--------Status-------------> " + "\(status)")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("--------Status-------------> " + "\(status)")
+        }
         self.eventSink?(status)
     }
 }

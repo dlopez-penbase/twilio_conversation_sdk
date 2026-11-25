@@ -12,8 +12,7 @@ DateFormat get formatterYYYYMMddTHHMMss => DateFormat('yyyy-MM-ddTHH:mm:ss');
 
 DateFormat get formatterHHMMAA => DateFormat('yyyy-MM-dd hh:mm a');
 
-DateFormat get formatterYYYYMMddTHHMMssSSS =>
-    DateFormat('yyyy-MM-ddTHH:mm:ss.SSS');
+DateFormat get formatterYYYYMMddTHHMMssSSS => DateFormat('yyyy-MM-ddTHH:mm:ss.SSS');
 
 void main() {
   runApp(const MyApp());
@@ -42,8 +41,7 @@ class _ConversationState extends State<Conversation> {
   static var accountSid = '';
   static var apiKey = '';
   static var apiSecret = '';
-  static var serviceSid =
-      ''; // Default Conversation Service SID
+  static var serviceSid = ''; // Default Conversation Service SID
   static var pushSid = '';
   static var identity = '';
   static var participantIdentity = '';
@@ -75,21 +73,16 @@ class _ConversationState extends State<Conversation> {
     });
   }
 
-  void getAccessToken(String accountSid, String apiKey, String apiSecret,
-      String identity, String serviceSid, String pushSid) async {
+  void getAccessToken(String accountSid, String apiKey, String apiSecret, String identity, String serviceSid, String pushSid) async {
     accessToken = await _twilioConversationSdkPlugin.generateToken(
-        accountSid: accountSid,
-        apiKey: apiKey,
-        apiSecret: apiSecret,
-        identity: identity,
-        serviceSid: serviceSid,
-        pushSid: pushSid);
+        accountSid: accountSid, apiKey: apiKey, apiSecret: apiSecret, identity: identity, serviceSid: serviceSid, pushSid: pushSid);
 
-    final String? resultInitialization = await _twilioConversationSdkPlugin
-        .initializeConversationClient(accessToken: accessToken!);
+    final String? resultInitialization = await _twilioConversationSdkPlugin.initializeConversationClient(accessToken: accessToken!);
     if (resultInitialization!.isNotEmpty) {
       _twilioConversationSdkPlugin.onClientSyncStatusChanged.listen((event) {
-        print("Client Status Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Client Status Received ${event.toString()}");
+        }
         if (event['status'] != null) {
           if (event['status'] == 2) {
             checkOrCreateConversation();
@@ -101,18 +94,21 @@ class _ConversationState extends State<Conversation> {
   }
 
   checkOrCreateConversation() async {
-    List conversationList =
-        await _twilioConversationSdkPlugin.getConversations() ?? [];
-    print("Conversation List $conversationList");
+    List conversationList = await _twilioConversationSdkPlugin.getConversations() ?? [];
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Conversation List $conversationList");
+    }
     if (conversationList.isNotEmpty) {
       bool isParticipantFound = false;
       for (Map conversation in conversationList) {
-        print("Conversation $conversation");
-        participantList = await _twilioConversationSdkPlugin
-                .getParticipantsWithName(conversationId: conversation["sid"]) ??
-            [];
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation $conversation");
+        }
+        participantList = await _twilioConversationSdkPlugin.getParticipantsWithName(conversationId: conversation["sid"]) ?? [];
         for (Map participant in participantList) {
-          print("Participant $participant");
+          if (_twilioConversationSdkPlugin.enableLogging) {
+            print("Participant $participant");
+          }
           if (participant["identity"] == participantIdentity) {
             isParticipantFound = true;
             conversationId = conversation["sid"];
@@ -135,36 +131,41 @@ class _ConversationState extends State<Conversation> {
   }
 
   unsubscribe() {
-    _twilioConversationSdkPlugin.unSubscribeToMessageUpdate(
-        conversationSid: conversationId);
+    _twilioConversationSdkPlugin.unSubscribeToMessageUpdate(conversationSid: conversationId);
   }
 
   subscribe() {
-    _twilioConversationSdkPlugin.subscribeToMessageUpdate(
-        conversationSid: conversationId);
+    _twilioConversationSdkPlugin.subscribeToMessageUpdate(conversationSid: conversationId);
     _twilioConversationSdkPlugin.onMessageReceived.listen((event) async {
       if (event['status'] != null) {
-        print("Conversation Status Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation Status Received ${event.toString()}");
+        }
         if (event['status'] == 3) {
           await getAllMessages();
         }
       } else if (event['author'] != null) {
-        print("Conversation Message Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation Message Received ${event.toString()}");
+        }
         messages.add(event);
         _animateToIndex(messages.length);
         setState(() {});
       } else if (event['mediaStatus'] != null) {
-        if (event['mediaStatus'] == "Completed" ||
-            event['mediaStatus'] == "Failed") {
+        if (event['mediaStatus'] == "Completed" || event['mediaStatus'] == "Failed") {
           setState(() {
             _progress = 0;
             totalBytes = 0;
             isSendMedia = false;
           });
         }
-        print("Conversation Message Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation Message Received ${event.toString()}");
+        }
       } else if (event['bytesSent'] != null) {
-        print("Conversation Message Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation Message Received ${event.toString()}");
+        }
         setState(() {
           final bytesSent = event['bytesSent'];
           _progress = bytesSent / totalBytes;
@@ -177,7 +178,9 @@ class _ConversationState extends State<Conversation> {
             isSendMedia = false;
           });
         }
-        print("Conversation Message Received ${event.toString()}");
+        if (_twilioConversationSdkPlugin.enableLogging) {
+          print("Conversation Message Received ${event.toString()}");
+        }
       }
     });
     /* _twilioConversationSdkPlugin.onMediaProgressReceived.listen((event) async {
@@ -196,9 +199,10 @@ class _ConversationState extends State<Conversation> {
     //String timeStamp = DateTime.now().toString();
     //String conversationName = "Flutter - $timeStamp";
     String conversationFriendlyName = "$identity-$participantIdentity";
-    conversationId = (await _twilioConversationSdkPlugin.createConversation(
-        conversationName: conversationFriendlyName, identity: identity))!;
-    print("Result $conversationId");
+    conversationId = (await _twilioConversationSdkPlugin.createConversation(conversationName: conversationFriendlyName, identity: identity))!;
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Result $conversationId");
+    }
     conversationName = conversationFriendlyName;
     joinConversation();
     addParticipant();
@@ -207,9 +211,10 @@ class _ConversationState extends State<Conversation> {
   }
 
   joinConversation() async {
-    String? joinResult = (await _twilioConversationSdkPlugin.joinConversation(
-        conversationId: conversationId))!;
-    print("Result $joinResult");
+    String? joinResult = (await _twilioConversationSdkPlugin.joinConversation(conversationId: conversationId))!;
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Result $joinResult");
+    }
   }
 
   sendMessage({bool isSendAttribute = false}) async {
@@ -228,11 +233,11 @@ class _ConversationState extends State<Conversation> {
       };
     }
 
-    final String? sendMessage = await _twilioConversationSdkPlugin.sendMessage(
-        conversationId: conversationId,
-        message: message.text.toString().trim(),
-        attribute: attribute);
-    print("Result $sendMessage");
+    final String? sendMessage =
+        await _twilioConversationSdkPlugin.sendMessage(conversationId: conversationId, message: message.text.toString().trim(), attribute: attribute);
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Result $sendMessage");
+    }
     message.text = "";
     setState(() {});
   }
@@ -242,15 +247,16 @@ class _ConversationState extends State<Conversation> {
 
     attribute = {"hasMedia": true};
 
-    final String? sendMessage =
-        await _twilioConversationSdkPlugin.sendMessageWithMedia(
-            message: "",
-            conversationId: conversationId,
-            attribute: attribute,
-            mediaFilePath: selectedDocPath,
-            mimeType: getMimeType(selectedDocPath),
-            fileName: fileName);
-    print("Result $sendMessage");
+    final String? sendMessage = await _twilioConversationSdkPlugin.sendMessageWithMedia(
+        message: "",
+        conversationId: conversationId,
+        attribute: attribute,
+        mediaFilePath: selectedDocPath,
+        mimeType: getMimeType(selectedDocPath),
+        fileName: fileName);
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Result $sendMessage");
+    }
     _progress = 0;
     totalBytes = 0;
     isSendMedia = false;
@@ -258,13 +264,15 @@ class _ConversationState extends State<Conversation> {
   }
 
   getAllMessages() async {
-    print("Get Message for $conversationId");
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Get Message for $conversationId");
+    }
     messages.clear();
-    var messageList = await _twilioConversationSdkPlugin.getMessages(
-            conversationId: conversationId) ??
-        [];
+    var messageList = await _twilioConversationSdkPlugin.getMessages(conversationId: conversationId) ?? [];
     messages.addAll(messageList);
-    print("Messages $messages");
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Messages $messages");
+    }
     setState(() {});
     Future.delayed(const Duration(milliseconds: 500));
     _animateToIndex(messages.length);
@@ -272,10 +280,10 @@ class _ConversationState extends State<Conversation> {
 
   addParticipant() async {
     final String? addSecondParticipantConversation =
-        await _twilioConversationSdkPlugin.addParticipant(
-            conversationId: conversationId,
-            participantName: participantIdentity);
-    print("Result Second $addSecondParticipantConversation");
+        await _twilioConversationSdkPlugin.addParticipant(conversationId: conversationId, participantName: participantIdentity);
+    if (_twilioConversationSdkPlugin.enableLogging) {
+      print("Result Second $addSecondParticipantConversation");
+    }
     unsubscribe();
     subscribe();
   }
@@ -289,20 +297,14 @@ class _ConversationState extends State<Conversation> {
         leading: participantIdentity.isNotEmpty
             ? Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                    color: Colors.black, shape: BoxShape.circle),
+                decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: Text(
                   participantIdentity.substring(0, 1),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 25),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),
                 ))
             : Container(),
-        title: Text(identity.isEmpty
-            ? "Twilio Conversation SDK"
-            : "$participantIdentity - $conversationName"),
+        title: Text(identity.isEmpty ? "Twilio Conversation SDK" : "$participantIdentity - $conversationName"),
         actions: [
           accessToken!.isNotEmpty
               ? IconButton(
@@ -319,8 +321,7 @@ class _ConversationState extends State<Conversation> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) {
-                          return ConversationList(
-                              identity, _twilioConversationSdkPlugin);
+                          return ConversationList(identity, _twilioConversationSdkPlugin);
                         },
                       ),
                     ).then((data) {
@@ -346,8 +347,7 @@ class _ConversationState extends State<Conversation> {
                         onChanged: (value) {
                           identity = value;
                         },
-                        decoration: const InputDecoration(
-                            labelText: 'Enter your identity'),
+                        decoration: const InputDecoration(labelText: 'Enter your identity'),
                       ),
                     )
                   : Container(),
@@ -358,8 +358,7 @@ class _ConversationState extends State<Conversation> {
                         onChanged: (value) {
                           participantIdentity = value;
                         },
-                        decoration: const InputDecoration(
-                            labelText: 'Enter participant identity'),
+                        decoration: const InputDecoration(labelText: 'Enter participant identity'),
                       ),
                     )
                   : Container(),
@@ -367,8 +366,7 @@ class _ConversationState extends State<Conversation> {
                   ? ElevatedButton(
                       onPressed: () {
                         if (identity.isNotEmpty) {
-                          getAccessToken(accountSid, apiKey, apiSecret,
-                              identity, serviceSid, pushSid);
+                          getAccessToken(accountSid, apiKey, apiSecret, identity, serviceSid, pushSid);
                         }
                       },
                       child: Text("Get Access Token"),
@@ -382,8 +380,7 @@ class _ConversationState extends State<Conversation> {
                               visible: isSendMedia,
                               child: LinearProgressIndicator(
                                 value: _progress,
-                                minHeight:
-                                    20.0, // Set the height of the progress bar
+                                minHeight: 20.0, // Set the height of the progress bar
                               ),
                             ),
                             Expanded(
@@ -394,17 +391,12 @@ class _ConversationState extends State<Conversation> {
                                   shrinkWrap: true,
                                   itemCount: messages.length,
                                   itemBuilder: (context, index) {
-                                    List? attachMedia =
-                                        messages[index]['attachMedia'] ?? [];
+                                    List? attachMedia = messages[index]['attachMedia'] ?? [];
                                     return InkWell(
                                         onTap: () async {
                                           await _twilioConversationSdkPlugin
                                               .deleteMessageWithSid(
-                                                  conversationId:
-                                                      conversationId,
-                                                  messageSid: messages[index]
-                                                      ["sid"],
-                                                  messageCount: 1000)
+                                                  conversationId: conversationId, messageSid: messages[index]["sid"], messageCount: 1000)
                                               .then((result) async {
                                             if (result == "Success") {
                                               await getAllMessages();
@@ -412,12 +404,8 @@ class _ConversationState extends State<Conversation> {
                                             print(result);
                                           });
                                         },
-                                        child: getMessageView(
-                                            messages[index]["attributes"],
-                                            messages[index]["body"],
-                                            messages[index]["author"],
-                                            messages[index]["dateCreated"],
-                                            attachMedia));
+                                        child: getMessageView(messages[index]["attributes"], messages[index]["body"], messages[index]["author"],
+                                            messages[index]["dateCreated"], attachMedia));
                                   },
                                 ),
                               ),
@@ -450,11 +438,7 @@ class _ConversationState extends State<Conversation> {
                                       border: InputBorder.none,
                                       hintText: 'Message',
                                       hintStyle: TextStyle(color: Colors.white),
-                                      contentPadding: EdgeInsets.only(
-                                          left: 15,
-                                          bottom: 11,
-                                          top: 11,
-                                          right: 15),
+                                      contentPadding: EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
                                     ),
                                   ),
                                 ),
@@ -465,8 +449,7 @@ class _ConversationState extends State<Conversation> {
                                           if (message.text.isNotEmpty) {
                                             sendMessage();
                                           } else {
-                                            showAlert(
-                                                "Please type your message");
+                                            showAlert("Please type your message");
                                           }
                                         },
                                         icon: const Icon(
@@ -482,9 +465,7 @@ class _ConversationState extends State<Conversation> {
                         isSendMedia
                             ? const CircularProgressIndicator()
                             : Container(
-                                decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle),
+                                decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
                                 alignment: Alignment.center,
                                 child: IconButton(
                                   onPressed: () async {
@@ -512,17 +493,12 @@ class _ConversationState extends State<Conversation> {
     );
   }
 
-  getMessageView(String attribute, String message, String author, String date,
-      List<dynamic>? attachMedia) {
-    String timeAgo = convertUTCToLocalChat(
-        utcDateTime: date,
-        inputDateFormat: formatterYYYYMMddTHHMMss,
-        outputDateFormat: formatterHHMMAA);
+  getMessageView(String attribute, String message, String author, String date, List<dynamic>? attachMedia) {
+    String timeAgo = convertUTCToLocalChat(utcDateTime: date, inputDateFormat: formatterYYYYMMddTHHMMss, outputDateFormat: formatterHHMMAA);
 
     for (Map participant in participantList) {
       if (participant["friendlyIdentity"] == author) {
-        authorName = participant["friendlyName"] != null &&
-                participant["friendlyName"].toString().isNotEmpty
+        authorName = participant["friendlyName"] != null && participant["friendlyName"].toString().isNotEmpty
             ? participant["friendlyName"]
             : participant["friendlyIdentity"];
         print("authorName>>$authorName");
@@ -541,8 +517,7 @@ class _ConversationState extends State<Conversation> {
       }
       print("mediaUrl${mediaUrl}");
       return Align(
-        alignment:
-            author == identity ? Alignment.centerRight : Alignment.centerLeft,
+        alignment: author == identity ? Alignment.centerRight : Alignment.centerLeft,
         child: Card(
           margin: const EdgeInsets.all(10),
           color: author == identity ? Colors.blue : Colors.black,
@@ -559,24 +534,18 @@ class _ConversationState extends State<Conversation> {
                       )
                     : const SizedBox(),
                 mediaUrl != null && mediaUrl.isNotEmpty
-                    ? contentType == "application/pdf" ||
-                            contentType == "video/mp4"
+                    ? contentType == "application/pdf" || contentType == "video/mp4"
                         ? Text(
                             textAlign: TextAlign.end,
                             filename ?? "",
-                            style: TextStyle(
-                                color: author == identity
-                                    ? Colors.white
-                                    : Colors.white,
-                                fontSize: 16),
+                            style: TextStyle(color: author == identity ? Colors.white : Colors.white, fontSize: 16),
                           )
                         : SizedBox(
                             height: 200,
                             width: 150,
                             child: CachedNetworkImage(
                                 imageUrl: mediaUrl,
-                                imageBuilder: (context, imageProvider) =>
-                                    Container(
+                                imageBuilder: (context, imageProvider) => Container(
                                       height: 200,
                                       width: 150,
                                       decoration: BoxDecoration(
@@ -597,19 +566,13 @@ class _ConversationState extends State<Conversation> {
                     ? Text(
                         textAlign: TextAlign.end,
                         message,
-                        style: TextStyle(
-                            color: author == identity
-                                ? Colors.white
-                                : Colors.white,
-                            fontSize: 10),
+                        style: TextStyle(color: author == identity ? Colors.white : Colors.white, fontSize: 10),
                       )
                     : const SizedBox(),
                 Text(
                   textAlign: TextAlign.end,
                   timeAgo,
-                  style: TextStyle(
-                      color: author == identity ? Colors.white : Colors.white,
-                      fontSize: 10),
+                  style: TextStyle(color: author == identity ? Colors.white : Colors.white, fontSize: 10),
                 ),
               ],
             ),
@@ -620,8 +583,7 @@ class _ConversationState extends State<Conversation> {
       Map<String, String> attributeModel = Map.castFrom(json.decode(attribute));
       if (attributeModel['url'] != null) {
         return Align(
-          alignment:
-              author == identity ? Alignment.centerRight : Alignment.centerLeft,
+          alignment: author == identity ? Alignment.centerRight : Alignment.centerLeft,
           child: Card(
             margin: const EdgeInsets.all(10),
             color: author == identity ? Colors.blue : Colors.black,
@@ -637,20 +599,13 @@ class _ConversationState extends State<Conversation> {
                       child: Text(
                         textAlign: TextAlign.center,
                         attributeModel['url']!,
-                        style: TextStyle(
-                            color: author == identity
-                                ? Colors.white
-                                : Colors.white,
-                            fontSize: 14),
+                        style: TextStyle(color: author == identity ? Colors.white : Colors.white, fontSize: 14),
                       ),
                     ),
                     Text(
                       textAlign: TextAlign.end,
                       timeAgo,
-                      style: TextStyle(
-                          color:
-                              author == identity ? Colors.white : Colors.white,
-                          fontSize: 10),
+                      style: TextStyle(color: author == identity ? Colors.white : Colors.white, fontSize: 10),
                     ),
                   ],
                 ),
@@ -660,8 +615,7 @@ class _ConversationState extends State<Conversation> {
         );
       } else {
         return Align(
-          alignment:
-              author == identity ? Alignment.centerRight : Alignment.centerLeft,
+          alignment: author == identity ? Alignment.centerRight : Alignment.centerLeft,
           child: Card(
             margin: const EdgeInsets.all(10),
             child: Padding(
@@ -673,22 +627,17 @@ class _ConversationState extends State<Conversation> {
                       ? Text(
                           textAlign: TextAlign.end,
                           authorName,
-                          style:
-                              const TextStyle(color: Colors.red, fontSize: 10),
+                          style: const TextStyle(color: Colors.red, fontSize: 10),
                         )
                       : const SizedBox(),
                   Text(
                     message,
-                    style: TextStyle(
-                        color: author == identity ? Colors.blue : Colors.black,
-                        fontSize: 14),
+                    style: TextStyle(color: author == identity ? Colors.blue : Colors.black, fontSize: 14),
                   ),
                   Text(
                     textAlign: TextAlign.end,
                     timeAgo,
-                    style: TextStyle(
-                        color: author == identity ? Colors.blue : Colors.black,
-                        fontSize: 10),
+                    style: TextStyle(color: author == identity ? Colors.blue : Colors.black, fontSize: 10),
                   ),
                 ],
               ),
@@ -698,8 +647,7 @@ class _ConversationState extends State<Conversation> {
       }
     } else {
       return Align(
-        alignment:
-            author == identity ? Alignment.centerRight : Alignment.centerLeft,
+        alignment: author == identity ? Alignment.centerRight : Alignment.centerLeft,
         child: Card(
           margin: const EdgeInsets.all(10),
           child: Padding(
@@ -716,16 +664,12 @@ class _ConversationState extends State<Conversation> {
                     : const SizedBox(),
                 Text(
                   message,
-                  style: TextStyle(
-                      color: author == identity ? Colors.blue : Colors.black,
-                      fontSize: 14),
+                  style: TextStyle(color: author == identity ? Colors.blue : Colors.black, fontSize: 14),
                 ),
                 Text(
                   timeAgo,
                   textAlign: TextAlign.end,
-                  style: TextStyle(
-                      color: author == identity ? Colors.blue : Colors.black,
-                      fontSize: 10),
+                  style: TextStyle(color: author == identity ? Colors.blue : Colors.black, fontSize: 10),
                 ),
               ],
             ),
@@ -735,10 +679,7 @@ class _ConversationState extends State<Conversation> {
     }
   }
 
-  String convertUTCToLocalChat(
-      {required String utcDateTime,
-      required DateFormat inputDateFormat,
-      required DateFormat outputDateFormat}) {
+  String convertUTCToLocalChat({required String utcDateTime, required DateFormat inputDateFormat, required DateFormat outputDateFormat}) {
     try {
       // Parse the UTC date string
       DateTime utcDate = inputDateFormat.parseUtc(utcDateTime);

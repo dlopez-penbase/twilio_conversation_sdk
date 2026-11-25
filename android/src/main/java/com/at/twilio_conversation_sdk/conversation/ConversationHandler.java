@@ -4,6 +4,7 @@ import static org.apache.commons.io.FileUtils.openInputStream;
 
 import androidx.annotation.NonNull;
 
+import com.at.twilio_conversation_sdk.TwilioConversationSdkPlugin;
 import com.at.twilio_conversation_sdk.app_interface.AccessTokenInterface;
 import com.at.twilio_conversation_sdk.app_interface.ClientInterface;
 import com.at.twilio_conversation_sdk.app_interface.MessageInterface;
@@ -54,7 +55,9 @@ public class ConversationHandler {
     /// Generate token and authenticate user #
     public static String generateAccessToken(String accountSid, String apiKey, String apiSecret, String identity, String serviceSid, String pushSid) {
         // Create an AccessToken builder
-        System.out.println("admin-" + Arrays.toString(apiSecret.getBytes()));
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("admin-" + Arrays.toString(apiSecret.getBytes()));
+        }
         AccessToken.Builder builder = new AccessToken.Builder(accountSid, apiKey, apiSecret.getBytes());
         // Set the identity of the token
         builder.identity(identity);
@@ -161,7 +164,9 @@ public class ConversationHandler {
             @Override
             public void onSuccess(Conversation conversation) {
                 // Retrieve the conversation object using the conversation SID
-                System.out.println("admin-" + conversation.getCreatedBy() + "---" + conversationClient.getMyIdentity());
+                if (TwilioConversationSdkPlugin.enableLogging) {
+                    System.out.println("admin-" + conversation.getCreatedBy() + "---" + conversationClient.getMyIdentity());
+                }
 
 //                if (conversationClient.getMyIdentity().equals(conversation.getCreatedBy())){
                 conversation.removeParticipantByIdentity(participantName, new StatusListener() {
@@ -214,7 +219,9 @@ public class ConversationHandler {
 
     /// Send message #
     public static void sendMessages(String enteredMessage, String conversationId, HashMap attribute, MethodChannel.Result result) {
-        System.out.println("sendMessages-> call from conversation handler");
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("sendMessages-> call from conversation handler");
+        }
         conversationClient.getConversation(conversationId, new CallbackListener<Conversation>() {
             @Override
             public void onSuccess(Conversation conversation) {
@@ -224,7 +231,9 @@ public class ConversationHandler {
                 conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).buildAndSend(new CallbackListener<Message>() {
                     @Override
                     public void onSuccess(Message message) {
-                        System.out.println("messageMap- onSuccess");
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("messageMap- onSuccess");
+                        }
                         if (message != null) {
                             result.success(message.getSid());
                         } else {
@@ -250,17 +259,21 @@ public class ConversationHandler {
 
     /// Send message #
     public static void sendMessageWithMedia(String enteredMessage, String conversationId, HashMap attribute, String mediaFilePath, String mimeType, String fileName, MethodChannel.Result result) {
-        System.out.println("sendMessageWithMedia-> call from conversation handler");
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("sendMessageWithMedia-> call from conversation handler");
+        }
         // Fetch the conversation using the conversationId
         conversationClient.getConversation(conversationId, new CallbackListener<Conversation>() {
             @Override
             public void onSuccess(Conversation conversation) {
                 try {
-                    System.out.println("enteredMessage:" + enteredMessage);
-                    System.out.println("conversationId:" + conversationId);
-                    System.out.println("MediaFile:" + mediaFilePath);
-                    System.out.println("MediaType" + mimeType);
-                    System.out.println("MediaName" + fileName);
+                    if (TwilioConversationSdkPlugin.enableLogging) {
+                        System.out.println("enteredMessage:" + enteredMessage);
+                        System.out.println("conversationId:" + conversationId);
+                        System.out.println("MediaFile:" + mediaFilePath);
+                        System.out.println("MediaType" + mimeType);
+                        System.out.println("MediaName" + fileName);
+                    }
                     // Prepare the message with media
                     JSONObject jsonObject;
                     jsonObject = new JSONObject(attribute);
@@ -275,12 +288,16 @@ public class ConversationHandler {
                     conversation.prepareMessage().setAttributes(attributes).setBody(enteredMessage).addMedia(fileInputStream, mimeType, fileName, new MediaUploadListener() {
                         @Override
                         public void onStarted() {
-                            System.out.println("Media onStarted:");
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Media onStarted:");
+                            }
                         }
 
                         @Override
                         public void onProgress(long bytesSent) {
-                            System.out.println("Media upload progress: " + bytesSent);
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Media upload progress: " + bytesSent);
+                            }
                             HashMap<String, Object> progressData = new HashMap<>();
                             progressData.put("bytesSent", bytesSent);
                             triggerEvent(progressData);
@@ -288,7 +305,9 @@ public class ConversationHandler {
 
                         @Override
                         public void onCompleted(@NonNull String mediaSid) {
-                            System.out.println("Media uploaded successfully with SID: " + mediaSid);
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Media uploaded successfully with SID: " + mediaSid);
+                            }
                             HashMap<String, Object> progressData = new HashMap<>();
                             progressData.put("mediaStatus", "Completed");
                             triggerEvent(progressData);
@@ -306,7 +325,9 @@ public class ConversationHandler {
                         @Override
                         public void onSuccess(Object data) {
                             // Message sent successfully
-                            System.out.println("Message sent successfully!");
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Message sent successfully!");
+                            }
                             result.success("send");
                         }
 
@@ -418,7 +439,9 @@ public class ConversationHandler {
                             result.setLastReadMessageIndex(result.getLastMessageIndex() + 1, new CallbackListener<Long>() {
                                 @Override
                                 public void onSuccess(Long result) {
-                                    System.out.println("LastReadMessageIndex- " + result);
+                                    if (TwilioConversationSdkPlugin.enableLogging) {
+                                        System.out.println("LastReadMessageIndex- " + result);
+                                    }
                                 }
                             });
 
@@ -438,7 +461,9 @@ public class ConversationHandler {
 
                     @Override
                     public void onMessageDeleted(Message message) {
-                        System.out.println("onMessageDeleted->" + message.getBody());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("onMessageDeleted->" + message.getBody());
+                        }
                         Map<String, Object> messageMap = new HashMap<>();
                         messageMap.put("sid", message.getSid());
                         messageMap.put("author", message.getAuthor());
@@ -462,18 +487,24 @@ public class ConversationHandler {
 
                     @Override
                     public void onTypingStarted(Conversation conversation, Participant participant) {
-                        System.out.println("onTypingStarted->" + participant.getIdentity());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("onTypingStarted->" + participant.getIdentity());
+                        }
                     }
 
                     @Override
                     public void onTypingEnded(Conversation conversation, Participant participant) {
-                        System.out.println("onTypingEnded->" + participant.getIdentity());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("onTypingEnded->" + participant.getIdentity());
+                        }
 
                     }
 
                     @Override
                     public void onSynchronizationChanged(Conversation conversation) {
-                        System.out.println("conversation onSynchronizationChanged->" + conversation.getSynchronizationStatus().toString() + ": " + conversation.getSynchronizationStatus().getValue());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("conversation onSynchronizationChanged->" + conversation.getSynchronizationStatus().toString() + ": " + conversation.getSynchronizationStatus().getValue());
+                        }
                         if (messageInterface != null) {
                             Map<String, Object> syncMap = new HashMap<>();
                             syncMap.put("status", conversation.getSynchronizationStatus().getValue());
@@ -533,7 +564,9 @@ public class ConversationHandler {
                     Date date = inputFormat.parse(conversationList.get(i).getLastMessageDate().toString());
                     String outputDateStr = outputFormat.format(date);
                     conversationMap.put("lastMessageDate", outputDateStr);
-                    System.out.println("lastMessageDateTime->" + outputDateStr);
+                    if (TwilioConversationSdkPlugin.enableLogging) {
+                        System.out.println("lastMessageDateTime->" + outputDateStr);
+                    }
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
@@ -543,7 +576,9 @@ public class ConversationHandler {
                 list.add(conversationMap);
             }
         }
-        System.out.println("getMyConversations----->" + list);
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("getMyConversations----->" + list);
+        }
         return list;
     }
 
@@ -635,8 +670,9 @@ public class ConversationHandler {
                 conversation.getUnreadMessagesCount(new CallbackListener<Long>() {
                     @Override
                     public void onSuccess(Long data) {
-
-                        System.out.println("Success fetching getUnreadMessagesCount: " + data);
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("Success fetching getUnreadMessagesCount: " + data);
+                        }
                         conversationMap.put("sid", conversationId);
                         conversationMap.put("unReadCount", data);
                         list.add(conversationMap);
@@ -656,7 +692,9 @@ public class ConversationHandler {
                 result.success(list);
             }
         });
-        System.out.println("getUnReadMsgCount----->" + list);
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("getUnReadMsgCount----->" + list);
+        }
     }
 
     /// Get messages from the specific conversation #
@@ -952,12 +990,18 @@ public class ConversationHandler {
 
                     @Override
                     public void onClientSynchronization(ConversationsClient.SynchronizationStatus synchronizationStatus) {
-                        System.out.println("onClientSynchronization synchronizationStatus->" + synchronizationStatus.getValue());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("onClientSynchronization synchronizationStatus->" + synchronizationStatus.getValue());
+                        }
                         if (synchronizationStatus == ConversationsClient.SynchronizationStatus.COMPLETED) {
-                            System.out.println("Client Synchronized");
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Client Synchronized");
+                            }
                         }
                         if (clientInterface != null) {
-                            System.out.println("Passed to Flutter");
+                            if (TwilioConversationSdkPlugin.enableLogging) {
+                                System.out.println("Passed to Flutter");
+                            }
                             Map<String, Object> syncMap = new HashMap<>();
                             syncMap.put("status", synchronizationStatus.getValue());
                             clientInterface.onClientSynchronizationChanged(syncMap);
@@ -991,12 +1035,16 @@ public class ConversationHandler {
 
                     @Override
                     public void onConnectionStateChange(ConversationsClient.ConnectionState state) {
-                        System.out.println("ConnectionState:" + state.getValue());
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("ConnectionState:" + state.getValue());
+                        }
                     }
 
                     @Override
                     public void onTokenExpired() {
-                        System.out.println("onTokenExpired");
+                        if (TwilioConversationSdkPlugin.enableLogging) {
+                            System.out.println("onTokenExpired");
+                        }
                         Map<String, Object> tokenStatusMap = new HashMap<>();
                         tokenStatusMap.put("statusCode", 401);
                         tokenStatusMap.put("message", Strings.accessTokenExpired);
@@ -1115,7 +1163,9 @@ public class ConversationHandler {
         conversationClient.updateToken(accessToken, new StatusListener() {
             @Override
             public void onSuccess() {
-                System.out.println("Refreshed access token.");
+                if (TwilioConversationSdkPlugin.enableLogging) {
+                    System.out.println("Refreshed access token.");
+                }
                 tokenStatus.put("statusCode", 200);
                 tokenStatus.put("message", Strings.accessTokenRefreshed);
                 result.success(tokenStatus);

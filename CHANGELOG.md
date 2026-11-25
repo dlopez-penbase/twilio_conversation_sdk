@@ -1,3 +1,6 @@
+## 0.4.3-p3
+New parameter at init to enable/disable console prints
+
 ## 0.4.3-p1
 The message SID is now clearly returned to Flutter when a new message is sent
 

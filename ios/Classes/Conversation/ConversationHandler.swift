@@ -18,7 +18,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     var tokenEventSink: FlutterEventSink?
     
       func conversationsClient(_ client: TwilioConversationsClient, conversation: TCHConversation, messageDeleted message: TCHMessage) {
-            print("messageDeleted - \(message)");
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("messageDeleted - \(message)");
+            }
             var dictionary: [String: Any] = [:]
             dictionary["sid"] = message.sid
             dictionary["author"] = message.author
@@ -64,7 +66,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
                     
                     media.getTemporaryContentUrl { result, tempUrl in
                         mediaMap["mediaUrl"] = tempUrl
-                        print("TempURL >>> \(tempUrl)")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("TempURL >>> \(tempUrl)")
+                        }
                     }
                     attachedMedia.append(mediaMap)
                     updatedMessage["attachMedia"] = attachedMedia
@@ -72,7 +76,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
                 
                 if (isSubscribe ?? false && conversationId == conversation.sid ){
                     conversation.setLastReadMessageIndex(computedIndex) { result, index in
-                        print("setLastReadMessageIndex \(result.description)")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("setLastReadMessageIndex \(result.description)")
+                        }
                     }
                 }
                 
@@ -95,8 +101,10 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             if result.isSuccessful {
                 completion(true)
             }
-            print("Twilio Notification Token Set: \(result) with token \(token)")
-            print("Device push token registration was\(result.isSuccessful ? "" : " not") successful")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("Twilio Notification Token Set: \(result) with token \(token)")
+                print("Device push token registration was\(result.isSuccessful ? "" : " not") successful")
+            }
         })
     }
     
@@ -110,20 +118,26 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             if result.isSuccessful {
                 completion(true)
             }
-            print("Twilio Notification Token deregister: \(result) with token \(token)")
-            print("Device push token deregister \(result.isSuccessful ? "" : " not") successful")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("Twilio Notification Token deregister: \(result) with token \(token)")
+                print("Device push token deregister \(result.isSuccessful ? "" : " not") successful")
+            }
         })
     }
     
     
     func conversationsClient(_ client: TwilioConversationsClient, conversation: TCHConversation, synchronizationStatusUpdated status: TCHConversationSynchronizationStatus) {
         self.messageDelegate?.onSynchronizationChanged(status: ["status" : conversation.synchronizationStatus.rawValue])
-        print("StatusConversations \(conversation.synchronizationStatus.rawValue) ")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("StatusConversations \(conversation.synchronizationStatus.rawValue) ")
+        }
         
     }
     
     func conversationsClientTokenWillExpire(_ client: TwilioConversationsClient) {
-        print("Access token will expire.->\(String(describing: tokenEventSink))")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("Access token will expire.->\(String(describing: tokenEventSink))")
+        }
         var tokenStatusMap: [String: Any] = [:]
         tokenStatusMap["statusCode"] = 200
         tokenStatusMap["message"] = Strings.accessTokenWillExpire
@@ -133,13 +147,17 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     
     func conversationsClient(_ client: TwilioConversationsClient, synchronizationStatusUpdated status: TCHClientSynchronizationStatus) {
         
-        print("statusclient->\(status.hashValue)--\(client.synchronizationStatus)")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("statusclient->\(status.hashValue)--\(client.synchronizationStatus)")
+        }
         
         guard status == .completed else {
             return
         }
         self.clientDelegate?.onClientSynchronizationChanged(status: ["status":client.synchronizationStatus.rawValue])
-        print("StatusClient \(client.synchronizationStatus.rawValue) ")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("StatusClient \(client.synchronizationStatus.rawValue) ")
+        }
         
         //            checkConversationCreation { (_, conversation) in
         //               if let conversation = conversation {
@@ -157,7 +175,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     
     
     func conversationsClientTokenExpired(_ client: TwilioConversationsClient) {
-        print("Access token expired.\(String(describing: tokenEventSink))")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("Access token expired.\(String(describing: tokenEventSink))")
+        }
         var tokenStatusMap: [String: Any] = [:]
         tokenStatusMap["statusCode"] = 401
         tokenStatusMap["message"] = Strings.accessTokenExpired
@@ -222,7 +242,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             let attributesObject : TCHJsonAttributes = TCHJsonAttributes(dictionary: attributes)
             
             guard let fileInputStream = InputStream(fileAtPath: mediaFilePath) else {
-                print("Error opening media file at path: \(mediaFilePath)")
+                if TwilioConversationSdkPlugin.enableLogging {
+                    print("Error opening media file at path: \(mediaFilePath)")
+                }
                 return
             }
             
@@ -232,16 +254,24 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
                 .setBody(messageText)
                 .addMedia(inputStream: fileInputStream, contentType: mimeType, filename: fileName, listener: MediaMessageListener(
                     onStarted: {
-                        print("Media upload started.")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("Media upload started.")
+                        }
                     },
                     onProgress: { bytesSent in
-                        print("Media upload progress: \(bytesSent) bytes sent.")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("Media upload progress: \(bytesSent) bytes sent.")
+                        }
                     },
                     onCompleted: { mediaSid in
-                        print("Media uploaded successfully with SID: \(mediaSid)")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("Media uploaded successfully with SID: \(mediaSid)")
+                        }
                     },
                     onFailed: { error in
-                        print("Media upload failed: \(error.localizedDescription )")
+                        if TwilioConversationSdkPlugin.enableLogging {
+                            print("Media upload failed: \(error.localizedDescription )")
+                        }
                     }
                 ))
                 .buildAndSend(completion: { tchResult, tchMessages in
@@ -260,7 +290,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
                                                       delegate: self) { (result, client) in
             self.client = client
             self.clientDelegate?.onClientSynchronizationChanged(status: ["status" : client?.synchronizationStatus.rawValue ?? -1])
-            print("\(client?.synchronizationStatus.rawValue ?? -1)")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("\(client?.synchronizationStatus.rawValue ?? -1)")
+            }
             //            self.client?.delegate?.conversationsClient?(<#T##client: TwilioConversationsClient##TwilioConversationsClient#>, synchronizationStatusUpdated: TCHClientSynchronizationStatus)
             completion(result)
         }
@@ -276,7 +308,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     
     func createConversation(uniqueConversationName:String,_ completion: @escaping (Bool, TCHConversation?,String) -> Void) {
         guard let client = client else {
-            print("createConversation: client is nil")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("createConversation: client is nil")
+            }
             completion(false, nil, "client not available")
             return
         }
@@ -296,12 +330,16 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     
     func getConversations(_ completion: @escaping([TCHConversation]) -> Void) {
         guard let client = client else {
-            print("getConversations: client is nil")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("getConversations: client is nil")
+            }
             completion([])
             return
         }
         guard client.synchronizationStatus == .completed else {
-            print("getConversations: client not synced, status=\(client.synchronizationStatus.rawValue)")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("getConversations: client not synced, status=\(client.synchronizationStatus.rawValue)")
+            }
             completion(client.myConversations() ?? [])
             return
         }
@@ -317,7 +355,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     func addParticipants(conversationId:String,participantName:String,_ completion: @escaping(TCHResult?) -> Void) {
         self.getConversationFromId(conversationId: conversationId) { conversation in
             guard let conversation = conversation else {
-                print("addParticipants: failed to get conversation: \(conversationId)")
+                if TwilioConversationSdkPlugin.enableLogging {
+                    print("addParticipants: failed to get conversation: \(conversationId)")
+                }
                 completion(nil)
                 return
             }
@@ -330,7 +370,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     func removeParticipants(conversationId:String,participantName:String,_ completion: @escaping(TCHResult?) -> Void) {
         self.getConversationFromId(conversationId: conversationId) { conversation in
             conversation?.removeParticipant(byIdentity: participantName,completion: { status in
-                print("status->\(status)")
+                if TwilioConversationSdkPlugin.enableLogging {
+                    print("status->\(status)")
+                }
                 completion(status)
             })
         }
@@ -377,7 +419,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     }
     
     func loadPreviousMessages(_ conversation: TCHConversation,_ messageCount: UInt?,_ completion: @escaping([[String: Any]]?) -> Void) {
-        print("synchronizationStatus->\(client?.synchronizationStatus == .completed)")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("synchronizationStatus->\(client?.synchronizationStatus == .completed)")
+        }
         guard client?.synchronizationStatus == .completed else {
             completion([])
             return
@@ -450,7 +494,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
     
     
     func getLastMessage(_ conversation: TCHConversation,_ messageCount: UInt?,_ completion: @escaping([[String: Any]]?) -> Void) {
-        print("synchronizationStatus->\(client?.synchronizationStatus == .completed)")
+        if TwilioConversationSdkPlugin.enableLogging {
+            print("synchronizationStatus->\(client?.synchronizationStatus == .completed)")
+        }
         guard client?.synchronizationStatus == .completed else {
             completion([])
             return
@@ -475,14 +521,18 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             conversation?.getUnreadMessagesCount(completion: { result, count in
                 if result.isSuccessful {
                     list.removeAll()
-                    print("Total Unread Count \(count)")
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print("Total Unread Count \(count)")
+                    }
                     dictionary["sid"] = conversationId
                     dictionary["unReadCount"] = count
                     list.append(dictionary)
                     completion(list)
                 }
                 else{
-                    print("No Unread Count")
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print("No Unread Count")
+                    }
                     dictionary["sid"] = conversationId
                     dictionary["unReadCount"] = 0
                     completion(list)
@@ -550,10 +600,16 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
                             completion: @escaping (String) -> Void){
         self.getConversationFromId(conversationId: conversationId) { conversation in
             conversation?.destroy { result in
-                if result.isSuccessful { print("Conversation deleted successfully")
+                if result.isSuccessful { 
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print("Conversation deleted successfully")
+                    }
                     completion(Strings.success)
                 }
-                else{ print("Failed to delete conversation")
+                else{
+                    if TwilioConversationSdkPlugin.enableLogging {
+                        print("Failed to delete conversation")
+                    }
                     completion(Strings.failed)
                 }
                 
@@ -652,7 +708,9 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
             dictionary["friendlyIdentity"] = friendlyIdentity
             dictionary["friendlyName"] = friendlyName
             
-            print(dictionary)
+            if TwilioConversationSdkPlugin.enableLogging {
+                print(dictionary)
+            }
             completion(dictionary) // Complete after all media details are processed
         }
         
@@ -674,10 +732,14 @@ class ConversationsHandler: NSObject, TwilioConversationsClientDelegate {
         // Parse the input date and format it to the desired output
         if let date = inputFormatter.date(from: lastMessageDateString ?? "") {
             let outputDateString = outputFormatter.string(from: date)
-            print("lastMessageDateTime->\(outputDateString)")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("lastMessageDateTime->\(outputDateString)")
+            }
             return outputDateString
         } else {
-            print("Failed to parse date string")
+            if TwilioConversationSdkPlugin.enableLogging {
+                print("Failed to parse date string")
+            }
             return nil
         }
     }

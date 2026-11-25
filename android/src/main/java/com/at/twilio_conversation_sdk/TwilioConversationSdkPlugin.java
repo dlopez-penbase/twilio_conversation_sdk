@@ -39,6 +39,8 @@ public class TwilioConversationSdkPlugin implements FlutterPlugin, MethodCallHan
     private EventChannel.EventSink tokenEventSink;
     private EventChannel.EventSink clientEventSink;
 
+    public static boolean enableLogging = false;
+
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "twilio_conversation_sdk");
@@ -57,17 +59,23 @@ public class TwilioConversationSdkPlugin implements FlutterPlugin, MethodCallHan
 
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-        System.out.println("call.method->" + call.method);
+        if (enableLogging) {
+            System.out.println("call.method->" + call.method);
+        }
         switch (call.method) {
             // To generate twilio access token #
             case Methods.generateToken: //Generate token and authenticate user
                 String accessToken = ConversationHandler.generateAccessToken(call.argument("accountSid"), call.argument("apiKey"), call.argument("apiSecret"), call.argument("identity"), call.argument("serviceSid"), call.argument("pushSid"));
-                System.out.println("accessToken generated->" + accessToken);
+                if (enableLogging) {
+                    System.out.println("accessToken generated->" + accessToken);
+                }
                 result.success(accessToken);
 //        ConversationHandler.initializeConversationClient(accessToken,result);
                 break;
 
             case Methods.initializeConversationClient: //Generate token and authenticate user
+                Boolean enableLog = call.argument("enableLogging");
+                enableLogging = (enableLog != null) && enableLog;
                 ConversationHandler.initializeConversationClient(call.argument("accessToken"), result, this);
                 break;
             //Register FCM Token#
@@ -175,7 +183,9 @@ public class TwilioConversationSdkPlugin implements FlutterPlugin, MethodCallHan
 
     @Override
     public void onListen(Object arguments, EventSink events) {
-        System.out.println("onListen " + arguments);
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("onListen " + arguments);
+        }
         this.eventSink = events;
         this.tokenEventSink = events;
         this.eventSyncSink = events;
@@ -218,9 +228,13 @@ public class TwilioConversationSdkPlugin implements FlutterPlugin, MethodCallHan
 
     @Override
     public void onClientSynchronizationChanged(Map status) {
-        System.out.println("onClientSynchronizationChanged SDK Plugin");
+        if (TwilioConversationSdkPlugin.enableLogging) {
+            System.out.println("onClientSynchronizationChanged SDK Plugin");
+        }
         if (this.clientEventSink != null) {
-            System.out.println("onClientSynchronizationChanged SDK Plugin Not null");
+            if (TwilioConversationSdkPlugin.enableLogging) {
+                System.out.println("onClientSynchronizationChanged SDK Plugin Not null");
+            }
             this.clientEventSink.success(status);
         }
     }
