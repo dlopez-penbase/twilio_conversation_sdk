@@ -3,8 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:twilio_conversation_sdk/twilio_conversation_sdk.dart';
 
 class ConversationList extends StatefulWidget {
-  const ConversationList(this.identity, this.twilioConversationSdkPlugin,
-      {super.key});
+  const ConversationList(this.identity, this.twilioConversationSdkPlugin, {super.key});
 
   final String identity;
   final TwilioConversationSdk twilioConversationSdkPlugin;
@@ -29,38 +28,38 @@ class _ConversationListState extends State<ConversationList> {
   }
 
   Future<void> listOfConversation() async {
-    var list =
-        await widget.twilioConversationSdkPlugin.getConversations() ?? [];
+    var list = await widget.twilioConversationSdkPlugin.getConversations() ?? [];
 
     conversationList.clear();
     conversationList.addAll(list);
-    print("Flutter$conversationList");
+    if (widget.twilioConversationSdkPlugin.enableLogging) {
+      print("Flutter$conversationList");
+    }
     for (dynamic conversation in conversationList) {
       var sid = conversation['sid'];
       if (sid != null) {
         //TODO unread msg count working
 
-        var lastMessage = await widget.twilioConversationSdkPlugin
-                .getLastMessages(conversationId: sid) ??
-            [];
-        print("Flutter LastMessage: $lastMessage");
+        var lastMessage = await widget.twilioConversationSdkPlugin.getLastMessages(conversationId: sid) ?? [];
+        if (widget.twilioConversationSdkPlugin.enableLogging) {
+          print("Flutter LastMessage: $lastMessage");
+        }
 
         if (lastMessage.isNotEmpty) {
           // Extract the message body from the fetched last message
           var messageBody = lastMessage[0]['lastMessage'] ?? 'No message';
-          var lastMessageDate =
-              lastMessage[0]['lastMessageDate'] ?? 'No lastMessageDate';
-          print("DevlastMessageDateFlutter--> $lastMessageDate");
+          var lastMessageDate = lastMessage[0]['lastMessageDate'] ?? 'No lastMessageDate';
+          if (widget.twilioConversationSdkPlugin.enableLogging) {
+            print("DevlastMessageDateFlutter--> $lastMessageDate");
+          }
 
-          var friendlyIdentity = lastMessage[0]['friendlyIdentity'] ??
-              'No friendlyIdentity'; // Default if no body
+          var friendlyIdentity = lastMessage[0]['friendlyIdentity'] ?? 'No friendlyIdentity'; // Default if no body
 
           // Find and update the conversation in conversationList by matching sid
           int index = conversationList.indexWhere((c) => c['sid'] == sid);
           if (index != -1) {
             // Update the conversation with the last message
-            conversationList[index]['lastMessage'] =
-                friendlyIdentity + ": " + messageBody;
+            conversationList[index]['lastMessage'] = friendlyIdentity + ": " + messageBody;
           }
         }
 
@@ -98,9 +97,7 @@ class _ConversationListState extends State<ConversationList> {
             ? 1
             : newLastDate == null && newLastDate == ""
                 ? -1
-                : -DateTime.parse(conversationOld['lastMessageDate'] ?? '')
-                    .compareTo(DateTime.parse(
-                        conversationNew['lastMessageDate'] ?? ''));
+                : -DateTime.parse(conversationOld['lastMessageDate'] ?? '').compareTo(DateTime.parse(conversationNew['lastMessageDate'] ?? ''));
       },
     );
   }
@@ -140,10 +137,8 @@ class _ConversationListState extends State<ConversationList> {
                   itemCount: conversationList.length,
                   itemBuilder: (context, index) {
                     int unreadIndex = 0;
-                    var lastReadIndex =
-                        conversationList.elementAt(index)['lastReadIndex'];
-                    var lastMessageIndex =
-                        conversationList.elementAt(index)['lastMessageIndex'];
+                    var lastReadIndex = conversationList.elementAt(index)['lastReadIndex'];
+                    var lastMessageIndex = conversationList.elementAt(index)['lastMessageIndex'];
                     if (lastMessageIndex != null && lastReadIndex != null) {
                       unreadIndex = lastMessageIndex - lastReadIndex;
                     }
@@ -153,21 +148,17 @@ class _ConversationListState extends State<ConversationList> {
                           conversationList.elementAt(index)['unReadCount'];
                     }*/
 
-                    var conversationName =
-                        conversationList.elementAt(index)['conversationName'];
-                    var lastMessage =
-                        conversationList.elementAt(index)['lastMessage'];
+                    var conversationName = conversationList.elementAt(index)['conversationName'];
+                    var lastMessage = conversationList.elementAt(index)['lastMessage'];
                     String formattedTime = '';
-                    if (conversationList.elementAt(index)['lastMessageDate'] !=
-                        null) {
-                      print(
-                          "dateTime ; ${conversationList.elementAt(index)['lastMessageDate']}");
-                      String time =
-                          conversationList.elementAt(index)['lastMessageDate'];
+                    if (conversationList.elementAt(index)['lastMessageDate'] != null) {
+                      if (widget.twilioConversationSdkPlugin.enableLogging) {
+                        print("dateTime ; ${conversationList.elementAt(index)['lastMessageDate']}");
+                      }
+                      String time = conversationList.elementAt(index)['lastMessageDate'];
                       DateTime dateTime = DateTime.parse(time).toLocal();
                       if (dateTime.isBefore(now)) {
-                        formattedTime =
-                            DateFormat('MM/dd/yyyy hh:mm a').format(dateTime);
+                        formattedTime = DateFormat('MM/dd/yyyy hh:mm a').format(dateTime);
                       } else {
                         formattedTime = DateFormat('hh:mm a').format(dateTime);
                       }
@@ -175,17 +166,14 @@ class _ConversationListState extends State<ConversationList> {
 
                     return InkWell(
                       onTap: () async {
-                        await deleteConversation(
-                            conversationList.elementAt(index)['sid'], index);
+                        await deleteConversation(conversationList.elementAt(index)['sid'], index);
                       },
                       child: Card(
                         child: Dismissible(
                           key: Key(conversationList.elementAt(index)['sid']),
                           direction: DismissDirection.endToStart,
                           onDismissed: (direction) async {
-                            await deleteConversation(
-                                conversationList.elementAt(index)['sid'],
-                                index);
+                            await deleteConversation(conversationList.elementAt(index)['sid'], index);
                           },
                           background: Container(
                             color: Colors.red,
@@ -204,30 +192,21 @@ class _ConversationListState extends State<ConversationList> {
                                 children: [
                                   Container(
                                       padding: const EdgeInsets.all(10),
-                                      decoration: const BoxDecoration(
-                                          color: Colors.black,
-                                          shape: BoxShape.circle),
+                                      decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
                                       alignment: Alignment.center,
                                       child: Text(
                                         conversationName.substring(0, 1),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 25),
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),
                                       )),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(conversationName),
                                         lastMessage != null
                                             ? Text(
                                                 lastMessage,
-                                                style: const TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight:
-                                                        FontWeight.normal),
+                                                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.normal),
                                               )
                                             : const SizedBox(),
                                       ],
@@ -238,24 +217,15 @@ class _ConversationListState extends State<ConversationList> {
                                     children: [
                                       Text(
                                         formattedTime,
-                                        style: TextStyle(
-                                            color: unreadIndex != 0
-                                                ? Colors.green
-                                                : Colors.grey,
-                                            fontWeight: FontWeight.normal),
+                                        style: TextStyle(color: unreadIndex != 0 ? Colors.green : Colors.grey, fontWeight: FontWeight.normal),
                                       ),
                                       unreadIndex != 0
                                           ? Container(
                                               padding: const EdgeInsets.all(10),
-                                              decoration: const BoxDecoration(
-                                                  color: Colors.black,
-                                                  shape: BoxShape.circle),
+                                              decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
                                               child: Text(
                                                 unreadIndex.toString(),
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                               ))
                                           : Container()
                                     ],
@@ -278,10 +248,10 @@ class _ConversationListState extends State<ConversationList> {
     setState(() {
       isLoading = true;
     });
-    await widget.twilioConversationSdkPlugin
-        .deleteConversation(conversationId: sid)
-        .then((result) {
-      print(result);
+    await widget.twilioConversationSdkPlugin.deleteConversation(conversationId: sid).then((result) {
+      if (widget.twilioConversationSdkPlugin.enableLogging) {
+        print(result);
+      }
       if (result == "Success") {
         conversationList.removeAt(index);
         ScaffoldMessenger.of(context).showSnackBar(
